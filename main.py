@@ -5,6 +5,8 @@ import requests
 from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import *  # 导入事件类
 from pkg.platform.types import *
+import plik # silk 编解码
+from pydub import AudioSegment
 
 
 def get_song_id(song_name):
