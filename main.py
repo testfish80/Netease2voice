@@ -70,26 +70,31 @@ def get_song_url(song_id):
         print(f'An error occurred: {err}')
     return None  # 如果获取失败，返回None
 
-
 def download_song(url, directory, filename):
     """
     下载歌曲并保存为MP3文件到指定目录。
     :param url: 歌曲直链
     :param directory: 保存的目录
     :param filename: 保存的文件名
+    :return: True if download is successful, False otherwise.
     """
     try:
-        response = requests.get(url)
+        response = requests.get(url, stream=True) # 使用 stream=True
         response.raise_for_status()  # 检查请求是否成功
         os.makedirs(directory, exist_ok=True)  # 创建目录（如果不存在）
         file_path = os.path.join(directory, filename)
         with open(file_path, 'wb') as f:  # 以二进制写入模式打开文件
-            f.write(response.content)  # 将内容写入文件
+            for chunk in response.iter_content(chunk_size=8192): # 分块写入
+                f.write(chunk)
         print(f"歌曲已下载并保存为 {file_path}")
+        return True  # 下载成功
     except requests.exceptions.HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
+        return False  # 下载失败
     except Exception as err:
         print(f'An error occurred: {err}')
+        return False  # 下载失败
+
 
 
 def mp3_to_silk(mp3_file, ffmpeg_path, encoder_path, silk_file_path):
@@ -179,28 +184,33 @@ class MyPlugin(BasePlugin):
                 if song_url:
                     download_dir = os.path.join(
                         os.path.dirname(__file__), 'music')
-                    download_song(song_url, download_dir, f'{song_name}.mp3')
-                    mp3_path = os.path.join(os.path.dirname(
-                        __file__), 'music', f'{song_name}.mp3')
-                    silk_path = os.path.join(os.path.dirname(
-                        __file__), 'music', f'{song_name}.silk')
-                    # 将mp3转换为silk
-                    # path = mp3_to_silk(mp3_path, ffmpeg_path,
-                    #                    encoder_path, silk_path)
-                    path = convert_to_silk(mp3_path,silk_path)
                     
-                    print(path)
-                    if path is None:
-                        await ctx.send_message("person", ctx.event.sender_id, [Plain("未找到该歌曲")])
-                        os.remove(os.path.join(
-                            download_dir, f'{song_name}.mp3'))
                     # 读取silk文件并以base64格式发送
-                    with open(path, "rb")as f:
-                        base64_audio = base64.b64encode(f.read()).decode()
-                        await ctx.send_message("person", ctx.event.sender_id, [Voice(base64=base64_audio)])
+                    download_success = download_song(song_url, download_dir, f'{song_name}.mp3') # 获取返回值
+                    if download_success: # 检查下载是否成功
+                        mp3_path = os.path.join(os.path.dirname(
+                            __file__), 'music', f'{song_name}.mp3')
+                        silk_path = os.path.join(os.path.dirname(
+                            __file__), 'music', f'{song_name}.silk')
+                        # 将mp3转换为silk
+                        # path = mp3_to_silk(mp3_path, ffmpeg_path,
+                        #                    encoder_path, silk_path)
+                        path = convert_to_silk(mp3_path,silk_path)
 
-                    os.remove(os.path.join(download_dir, f'{song_name}.mp3'))
-                    os.remove(os.path.join(download_dir, f'{song_name}.silk'))
+                        print(path)
+                        if path is None:
+                            await ctx.send_message("person", ctx.event.sender_id, [Plain("未找到该歌曲")])
+                            os.remove(os.path.join(
+                                download_dir, f'{song_name}.mp3'))
+                            
+                         # 读取silk文件并以base64格式发送
+                        with open(path, "rb")as f:
+                            base64_audio = base64.b64encode(f.read()).decode()
+                            await ctx.send_message("person", ctx.event.sender_id, [Voice(base64=base64_audio)])
+                        # os.remove(os.path.join(download_dir, f'{song_name}.mp3'))
+                        # os.remove(os.path.join(download_dir, f'{song_name}.silk'))
+                    else:
+                        await ctx.send_message("person", ctx.event.sender_id, [Plain("下载歌曲失败")])
                 else:
                     await ctx.send_message("person", ctx.event.sender_id, [Plain("获取歌曲链接失败")])
             else:
