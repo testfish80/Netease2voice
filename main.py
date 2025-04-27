@@ -5,7 +5,7 @@ import requests
 from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import *  # 导入事件类
 from pkg.platform.types import *
-import plik # silk 编解码
+import pilk # silk 编解码
 from pydub import AudioSegment
 
 
@@ -123,12 +123,14 @@ def mp3_to_silk(mp3_file, ffmpeg_path, encoder_path, silk_file_path):
 
     return silk_file_path
     
-def convert_to_silk(media_path: str) -> str:    # , silk_file_path
+def convert_to_silk(media_path: str, silk_file_path) -> str:    # , silk_file_path
     """将输入的媒体文件转出为 silk, 并返回silk路径"""
+    media_path = r"{}".format(media_path)
+    silk_file_path = r"{}".format(silk_file_path)
     media = AudioSegment.from_file(media_path)
     pcm_path = os.path.basename(media_path)
     pcm_path = os.path.splitext(pcm_path)[0]
-    silk_path = pcm_path + '.silk'
+    silk_path = silk_file_path
     pcm_path += '.pcm'
     media.export(pcm_path, 's16le', parameters=['-ar', str(media.frame_rate), '-ac', '1']).close()
     pilk.encode(pcm_path, silk_path, pcm_rate=media.frame_rate, tencent=True)
@@ -168,7 +170,7 @@ class MyPlugin(BasePlugin):
                     # 将mp3转换为silk
                     # path = mp3_to_silk(mp3_path, ffmpeg_path,
                     #                    encoder_path, silk_path)
-                    path = convert_to_silk(mp3_path)
+                    path = convert_to_silk(mp3_path,silk_path)
                     
                     print(path)
                     if path is None:
