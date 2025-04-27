@@ -122,6 +122,17 @@ def mp3_to_silk(mp3_file, ffmpeg_path, encoder_path, silk_file_path):
         return None
 
     return silk_file_path
+    
+def convert_to_silk(media_path: str) -> str:    # , silk_file_path
+    """将输入的媒体文件转出为 silk, 并返回silk路径"""
+    media = AudioSegment.from_file(media_path)
+    pcm_path = os.path.basename(media_path)
+    pcm_path = os.path.splitext(pcm_path)[0]
+    silk_path = pcm_path + '.silk'
+    pcm_path += '.pcm'
+    media.export(pcm_path, 's16le', parameters=['-ar', str(media.frame_rate), '-ac', '1']).close()
+    pilk.encode(pcm_path, silk_path, pcm_rate=media.frame_rate, tencent=True)
+    return silk_path
 
 
 @register(name="Netease_get", description="点歌", version="1.2", author="GryllsGYS")
@@ -137,10 +148,7 @@ class MyPlugin(BasePlugin):
 
     @handler(PersonNormalMessageReceived)
     async def person_normal_message_received(self, ctx: EventContext):
-        ffmpeg_path = os.path.join(
-            os.path.dirname(__file__), 'music', 'ffmpeg.exe')
-        encoder_path = os.path.join(os.path.dirname(
-            __file__), 'music', 'silk_v3_encoder.exe')
+
         msg: str = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
         match = re.search(r'(.*)(点歌)(.*)', msg)
         if match:
@@ -158,8 +166,10 @@ class MyPlugin(BasePlugin):
                     silk_path = os.path.join(os.path.dirname(
                         __file__), 'music', f'{song_name}.silk')
                     # 将mp3转换为silk
-                    path = mp3_to_silk(mp3_path, ffmpeg_path,
-                                       encoder_path, silk_path)
+                    # path = mp3_to_silk(mp3_path, ffmpeg_path,
+                    #                    encoder_path, silk_path)
+                    path = convert_to_silk(mp3_path)
+                    
                     print(path)
                     if path is None:
                         await ctx.send_message("person", ctx.event.sender_id, [Plain("未找到该歌曲")])
@@ -201,10 +211,7 @@ class MyPlugin(BasePlugin):
 
     @handler(GroupNormalMessageReceived)
     async def group_normal_message_received(self, ctx: EventContext):
-        ffmpeg_path = os.path.join(
-            os.path.dirname(__file__), 'music', 'ffmpeg.exe')
-        encoder_path = os.path.join(os.path.dirname(
-            __file__), 'music', 'silk_v3_encoder.exe')
+
         msg: str = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
         match = re.search(r'(.*)(点歌)(.*)', msg)
         if match:
@@ -222,8 +229,9 @@ class MyPlugin(BasePlugin):
                     silk_path = os.path.join(os.path.dirname(
                         __file__), 'music', f'{song_name}.silk')
                     # 将mp3转换为silk
-                    path = mp3_to_silk(mp3_path, ffmpeg_path,
-                                       encoder_path, silk_path)
+                    # path = mp3_to_silk(mp3_path, ffmpeg_path,
+                    #                    encoder_path, silk_path)
+                    path = convert_to_silk(mp3_path)
                     print(path)
                     if path is None:
                         await ctx.send_message("group", ctx.event.launcher_id, [Plain("未找到该歌曲")])
