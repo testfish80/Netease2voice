@@ -123,18 +123,35 @@ def mp3_to_silk(mp3_file, ffmpeg_path, encoder_path, silk_file_path):
 
     return silk_file_path
     
-def convert_to_silk(media_path: str, silk_file_path) -> str:    # , silk_file_path
-    """将输入的媒体文件转出为 silk, 并返回silk路径"""
+def convert_to_silk(media_path: str, silk_file_path: str) -> str:
+    """将输入的媒体文件转出为 silk, 并返回silk路径 (使用 pilk 库)"""
     media_path = r"{}".format(media_path)
     silk_file_path = r"{}".format(silk_file_path)
-    media = AudioSegment.from_file(media_path)
-    pcm_path = os.path.basename(media_path)
-    pcm_path = os.path.splitext(pcm_path)[0]
-    silk_path = silk_file_path
-    pcm_path += '.pcm'
-    media.export(pcm_path, 's16le', parameters=['-ar', str(media.frame_rate), '-ac', '1']).close()
-    pilk.encode(pcm_path, silk_path, pcm_rate=media.frame_rate, tencent=True)
-    return silk_path
+
+    try:
+        # 1. 加载音频文件
+        media = AudioSegment.from_file(media_path)
+
+        # 2.  创建临时 PCM 文件
+        pcm_path = "temp.pcm"
+
+        # 3. 导出为 PCM 格式
+        media.export(pcm_path, format="s16le", parameters=["-ac", "1", "-ar", str(media.frame_rate)]).close()
+
+        # 4. 使用 pilk 编码
+        pilk.encode(pcm_path, silk_file_path, pcm_rate=media.frame_rate, tencent=True)
+
+        # 5. 删除临时 PCM 文件
+        os.remove(pcm_path)
+
+        return silk_file_path
+
+    except FileNotFoundError:
+        print("文件未找到")
+        return None
+    except Exception as e:
+        print(f"发生其他错误: {e}")
+        return None
 
 
 @register(name="Netease_get", description="点歌", version="1.2", author="GryllsGYS")
