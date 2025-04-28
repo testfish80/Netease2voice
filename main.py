@@ -226,14 +226,14 @@ class MyPlugin(BasePlugin):
             # with open(path, "rb") as f:
             #     base64_audio = base64.b64encode(f.read()).decode()
             if os.path.exists(path):
-                voice = await MessageChain([Voice.from_local(filename=path)
-                                           ])
+                # voice = await MessageChain([Voice.from_local(filename=path)
+                #                            ])
                 msg_chain = MessageChain([
                     Plain("Hello LangBot")
                                          ])
                 await ctx.send_message("person", ctx.event.sender_id,msg_chain)
                 # 发送语音消息
-                await ctx.send_message("person", ctx.event.sender_id,voice)
+                await ctx.send_message("person", ctx.event.sender_id,[Voice(path=str(path))])
         if msg == "唱歌":
             # 阻止默认处理
             ctx.prevent_default()
