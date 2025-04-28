@@ -7,6 +7,7 @@ from pkg.plugin.events import *  # 导入事件类
 from pkg.platform.types import *
 import pilk # silk 编解码
 from pydub import AudioSegment
+import pkg.platform.types as platform_types
 
 
 def get_song_id(song_name):
@@ -222,11 +223,17 @@ class MyPlugin(BasePlugin):
             # 读取silk文件并转成base64
             path = os.path.join(os.path.dirname(__file__),
                                 "voice", "200.silk")
-            with open(path, "rb") as f:
-                base64_audio = base64.b64encode(f.read()).decode()
+            # with open(path, "rb") as f:
+            #     base64_audio = base64.b64encode(f.read()).decode()
+            if os.path.exists(path):
+                voice = await MessageChain([Voice.from_local(filename=path)
+                                           ])
+                msg_chain = MessageChain([
+                    Plain("Hello LangBot")
+                                         ])
+                await ctx.send_message("person", ctx.event.sender_id,msg_chain)
                 # 发送语音消息
-                await ctx.send_message("person", ctx.event.sender_id, [Voice(base64=base64_audio)])
-
+                await ctx.send_message("person", ctx.event.sender_id,voice)
         if msg == "唱歌":
             # 阻止默认处理
             ctx.prevent_default()
