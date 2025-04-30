@@ -228,12 +228,21 @@ class MyPlugin(BasePlugin):
             if os.path.exists(path):
                 # voice = await MessageChain([Voice.from_local(filename=path)
                 #                            ])
-                msg_chain = MessageChain([
-                    Plain("Hello LangBot")
+                try:
+                    with open(path, "rb") as f:
+                        audio_data = f.read()
+                    audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+                    voice_message = MessageChain([Voice(url=f"data:audio/mpeg;base64,{audio_base64}")]) # 创建MessageChain
+                    msg_chain = MessageChain([
+                        Plain("Hello LangBot")
                                          ])
-                await ctx.send_message("person", ctx.event.sender_id,msg_chain)
-                # 发送语音消息
-                await ctx.send_message("person", ctx.event.sender_id,[Voice(path=str(path))])
+                    await ctx.send_message("person", ctx.event.sender_id,msg_chain)
+                    # 发送语音消息
+                    # await ctx.send_message("person", ctx.event.sender_id,[Voice(path=str(path))])
+                    await ctx.send_message("person", ctx.event.sender_id, voice_message)
+                except Exception as e:
+                    self.ap.logger.error(f"发送语音消息失败: {e}") # 使用ctx.ap.logger记录错误
+                 
         if msg == "唱歌":
             # 阻止默认处理
             ctx.prevent_default()
